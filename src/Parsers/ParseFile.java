@@ -8,11 +8,12 @@ import java.util.HashSet;
 
 public class ParseFile {
 	
-	public char[] inputName;	// a b c
+	private char[] inputName;	// a b c
+	private char[] outputName;
 	public HashSet<String> inputBooleanSet = new HashSet<>();	//110 001 101
 	
 	//uppercase ---> normal, lowercase ---> inverse
-	public String[] inputTerm;
+	public String[] inputMinterm;
 	
 	/**
 	 * @param input:Strs[2] from seperate(toSep)
@@ -27,6 +28,13 @@ public class ParseFile {
 		char[] inputChar = strTemp.toCharArray();
 		
 		return inputChar;
+	}
+	private char[] getOutputNames(String output){
+		String tmp = output.replaceAll(".outputs","");
+		tmp=tmp.replaceAll(" ", "");
+
+		char [] outputChar = tmp.toCharArray();
+		return outputChar;
 	}
 	/**
 	 * 
@@ -64,6 +72,7 @@ public class ParseFile {
 							this.inputName = getInputNames(line);
 							break;
 						case ".outputs":
+							this.outputName=getOutputNames(line);
 							break;
 						case ".names":
 							break;
@@ -77,11 +86,7 @@ public class ParseFile {
 						this.getInput(line);
 					}
 				}
-				
-//				for(Map.Entry<String, State> entry : stateMap.entrySet()){
-//					pf.addState(entry.getValue());
-//				}
-				
+
 				inputTermGenerate(inputName, inputBooleanSet);
 			}
 			blifFile.close();
@@ -91,6 +96,17 @@ public class ParseFile {
 			e.printStackTrace();
 		}
 	}
+	/**
+	 * getter
+	 */
+	public char[] getInputName() {
+		return inputName;
+	}
+
+	public char[] getOutputName() {
+		return outputName;
+	}
+
 	/**
 	 * generate the boolean function
 	 * @param names: inputnames[]
@@ -116,19 +132,7 @@ public class ParseFile {
 			toReturn += toReturnTmp + "+";
 		}
 		
-		this.inputTerm = toReturn.split("\\+");
+		this.inputMinterm = toReturn.split("\\+");
 	}
 	
-	public static void main(String arg[]) throws IOException{
-		ParseFile p= new ParseFile();
-//		String theFile;
-//		theFile=parsefile.readFile("E:\\eclipse-workspace\\MiniTask1\\src\\0.blif");
-		p.paserFile("E:\\eclipse-workspace\\MiniTask1\\src\\9.blif");
-		
-		//create boolean function:
-		
-		for(String s: p.inputTerm) {
-			System.out.println(s);
-		}
-	}
 }
