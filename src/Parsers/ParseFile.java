@@ -121,9 +121,9 @@ public class ParseFile {
 			String toReturnTmp = "";
 			for(int j=0;j<lengthofNames;j++) {
 				if(ValueTmp.charAt(j)=='0') {
-					toReturnTmp += names[j];
+					toReturnTmp += (char)(names[j] - 32);//uppercase letters represents inverse
 				}else {
-					toReturnTmp += (char)(names[j] - 32);
+					toReturnTmp += names[j];//lowcase letters represents normal
 				}
 				
 			}

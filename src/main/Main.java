@@ -3,19 +3,17 @@ package main;
 import Parsers.ParseFile;
 import strashing.AIG;
 import strashing.Node;
-import strashing.SubstruLib;
+import strashing.NodeLib;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Main {
 
-	public Main() {
-		// TODO Auto-generated constructor stub
-	}
+	public static final int AND = 1;
+	public static final int OR = 2;
 
 	public static void main(String[] args) {
 		int M;   //maximum index M=I+L+A
@@ -23,21 +21,46 @@ public class Main {
 		int L;   //latch
 		int O;   //output
 		int A;   //and gate, number of nodes
+
+		/*parse the blif file*/
 		ParseFile p= new ParseFile();
-		p.paserFile("D:\\TUD\\lls_pro\\src\\2.blif");
+		p.paserFile("E:\\eclipse-workspace\\MiniTask1\\src\\0.blif");
 
-		Node firstMintermFromParser = new Node(p.inputMinterm[0]);
-		SubstruLib LookUpLib = new SubstruLib();
-		LookUpLib.initLib(firstMintermFromParser, LookUpLib.lib);
+		char[] InputNames=p.getInputName();
+		char[] OutputNames=p.getOutputName();
 
-		for(int i=1; i<p.inputMinterm.length; i++) {
-			String keyOfinputMinterm = p.inputMinterm[i];
-			LookUpLib.generateAIG(keyOfinputMinterm);
+		/*parse the primary input and intialize the library with it*/
+		NodeLib LookUpLib = new NodeLib();
+		LookUpLib.initLib(InputNames);
+
+		/*construct the AIG-tree*/
+		AIG aigTree = new AIG();
+		String[] inputMinterm = p.inputMinterm;
+		for(int j=1; j<InputNames.length; j++) {//traverse the content of the Minterm
+			for (String s : inputMinterm) {//traverse every Minterm
+				String keyofN1 = s.substring(0, j);//0th to j-1th character
+				String keyofN2 = s.substring(j, j + 1);//jth character
+				aigTree.generateAIG(LookUpLib, keyofN1, keyofN2, AND);
+			}
 		}
-//
-//
-//
-		for(HashMap<String, Node> map: LookUpLib.lib) {
+
+		/*construct the Or Gate in the Form of And-Inverter Gate*/
+		int indexOfMintermLevel = LookUpLib.getNumOfLevels() - 1;
+		HashMap<String, Node> mintermLevel = LookUpLib.Aig_NodeLib.get(indexOfMintermLevel);
+		ArrayList<Node> mintermTable = new ArrayList<>();
+		for (Map.Entry<String, Node> entry: mintermLevel.entrySet()) {
+			mintermTable.add(entry.getValue());
+		}
+
+		Node tempNode = mintermTable.get(0);
+		for(int i=1; i<mintermTable.size(); i++){
+			Node n = mintermTable.get(i);
+			tempNode = aigTree.Op_Or(LookUpLib, tempNode, n);
+		}
+
+
+		/*output the library in the console*/
+		for(HashMap<String, Node> map: LookUpLib.Aig_NodeLib) {
 			for(Map.Entry<String, Node> entry: map.entrySet()) {
 				System.out.print(entry.getKey() + " ");
 			}
@@ -45,59 +68,69 @@ public class Main {
 			System.out.println("--------------");
 		}
 
-		AIG aig = new AIG();
-		System.out.println(aig.calculate_AIGNode(LookUpLib.lib, LookUpLib.AIG_commonNode));
-
 //		System.out.println(LookUpLib.getCommmonNode("AbC"));
+
 		//******************************** init Writing ******************************************
-		char[] InputNames=p.getInputName();
 		System.out.println(InputNames);
-		char[] OutputNames=p.getOutputName();
 
 		I=InputNames.length;
 		O=OutputNames.length;
 		//****************************************************************************************
 
 		//****************************************************************************************
-		A=aig.calculate_AIGNode(LookUpLib.lib, LookUpLib.AIG_commonNode);
+		A=aigTree.calculate_AIGNode(LookUpLib);
 		L=0;
 		M=I+L+A;
 		//****************************  Write  ***************************************************
+
+		StringBuilder s=new StringBuilder();
+
+		HashMap<Integer, Node> inputs = new HashMap<>();
+		HashMap<Integer, Node> outputs = new HashMap<>();
+		ArrayList<Node> ands;
+
+		for (char inputName : InputNames) {
+			Node n = LookUpLib.getNode(Character.toString(inputName));
+			inputs.put(n.index, n);
+		}
+
+		outputs.put(tempNode.index, tempNode);
+
+		ands=aigTree.flieNodes(LookUpLib);
+
+		s.append(String.format("aag %d %d %d %d %d\n", M, I, L, O, A));
+		for(Map.Entry<Integer, Node> entry: inputs.entrySet()){
+			s.append(String.format("%d\n",entry.getKey()));
+		}
+
+		for (Map.Entry<Integer, Node> entry: outputs.entrySet()){
+			s.append(String.format("%d\n",entry.getKey()));
+		}
+
+		for (Node node: ands){
+			s.append(String.format(("%d %d %d\n"), node.index, node.leftChild.index, node.rightChild.index));
+		}
+
+		for(int i=0;i<InputNames.length;i++){
+			s.append(String.format(("i%d %c\n"), i, InputNames[i]));
+		}
+
+		for(int i=0;i<OutputNames.length;i++){
+			s.append(String.format(("o%d %c\n"), i, OutputNames[i]));
+		}
+
+		/*comment*/
+		s.append("c\n");
+		s.append("bliftoaig by our method\n");
+
+		FileWriter fileWriter;
 		try {
-			BufferedWriter bw=new BufferedWriter(new FileWriter("Result.aig"));
-			bw.write("aag"+" "+M+" "+I+" "+L+" "+O+" "+A);
-			bw.newLine();
-			int index=0;
-			for(int i=0;i<InputNames.length;i++){
-				if(Character.isUpperCase(InputNames[i])){	//uppercase:0, lowercase:1
-					//String tmp=Integer.toBinaryString(index);
-					//bw.write(index+"    "+InputNames[i]);
-					bw.write(index);
-					index=index+2;
-				}else{
-					index++;
-					//String tmp=Integer.toBinaryString(index);
-					bw.write(index+"    "+InputNames[i]);
-					index++;
-				}
-				bw.newLine();
-			}
-			for (int j=0;j<OutputNames.length;j++){
-				//String tmp=Integer.toBinaryString(index);
-				bw.write(index+"    "+OutputNames[j]);
-				bw.newLine();
-			}
-			//TODO: to print and gate names(Node names)
-			/*
-			to get and gate:
-			for every node:
-			father index, leftChild index, rightChild index    +       AND gate index
-			* */
-			//*******************************************************************
-			bw.close();
+			fileWriter=new FileWriter("result.aag");
+			fileWriter.write(String.valueOf(s));
+			fileWriter.flush();
+			fileWriter.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-
 }

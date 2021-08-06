@@ -5,12 +5,15 @@ import java.util.List;
 import java.util.Objects;
 
 public class Node {
+
+    static int INDEX = 0;
+
     public List<Node> father = new ArrayList<>();
     public Node leftChild;
     public Node rightChild;
     public String key;
-    public boolean isCommonNode;     //if it is final state(key=1), stop separating it
-    public int Index;
+    public int index;				//
+    public boolean isInverted;
 
     /**
      * middle node
@@ -18,28 +21,32 @@ public class Node {
      * @param leftChild
      * @param rightChild
      * @param key
-     * @param single
+     * @param index
+     * @param isInverted
      */
-    public Node(List<Node> father, Node leftChild, Node rightChild, String key, boolean isCommonNode) {
+    public Node(List<Node> father, Node leftChild, Node rightChild, String key, int index, boolean isInverted) {
         this.father = father;
         this.leftChild = leftChild;
         this.rightChild = rightChild;
         this.key = key;
-        this.isCommonNode = isCommonNode;
+        this.index = index;
+        this.isInverted = isInverted;
     }
 
     /**
-     * default first node
+     * default first node(primary input)
      * @param key
      */
-    public Node(String key){
+    public Node(String key, int index){
         this.key=key;
         this.father=new ArrayList<Node>();
-        this.isCommonNode = false;
+        this.isInverted = false;
         this.leftChild=null;
         this.rightChild=null;
+        this.index = index;
     }
-    
+
+
     
     public boolean hasChild() {
     	return this.leftChild != null && this.rightChild != null; 
